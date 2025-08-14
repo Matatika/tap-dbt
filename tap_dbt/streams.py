@@ -258,9 +258,43 @@ class RunArtifact(AccountBasedStream):
         if context["artifacts_saved"]:
             return super().get_records(context)
         return []
-    
+
     def parse_response(self, response):
         yield from ({"path": path} for path in super().parse_response(response))
+
+    def get_new_paginator(self):
+        return SinglePagePaginator()
+
+
+class RunDetailStream(AccountBasedStream):
+    """A stream for the runs endpoint including additional information."""
+
+    name = "runs_detail"
+    path = "/accounts/{account_id}/runs/{run_id}"
+    openapi_ref = "Run"
+
+    parent_stream_type = RunsStream
+
+    def get_url_params(self, context, next_page_token):
+        return {
+            "include_related": ",".join(  # noqa: FLY002
+                [
+                    "run_steps",
+                    "trigger",
+                    "job",
+                    "environment",
+                    "repository",
+                    "run_retries",
+                    "used_repo_cache",
+                    "repo_cache_restore",
+                    "audit",
+                    "debug_logs",
+                ]
+            )
+        }
+
+    def parse_response(self, response):
+        yield from super().parse_response(response)
 
     def get_new_paginator(self):
         return SinglePagePaginator()

@@ -269,7 +269,7 @@ class RunArtifact(AccountBasedStream):
 class RunDetailStream(AccountBasedStream):
     """A stream for the runs endpoint including additional information."""
 
-    name = "runs_detail"
+    name = "run_detail"
     path = "/accounts/{account_id}/runs/{run_id}"
     openapi_ref = "Run"
 

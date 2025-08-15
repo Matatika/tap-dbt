@@ -293,8 +293,5 @@ class RunDetailStream(AccountBasedStream):
             )
         }
 
-    def parse_response(self, response):
-        yield from super().parse_response(response)
-
     def get_new_paginator(self):
         return SinglePagePaginator()

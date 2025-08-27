@@ -1277,26 +1277,24 @@ components:
           nullable: true
           description: Overrides the dbt_version specified on the attached Environment if provided
           example: 0.17.1
-        triggers:
-          type: object
-          required:
-            - github_webhook
-            - schedule
-          properties:
-            github_webhook:
-              type: boolean
-            git_provider_webhook:
-              type: boolean
-            schedule:
-              type: boolean
-            custom_branch_only:
-              type: boolean
+        deferring_environment_id:
+          type: "integer"
+        deferring_job_definition_id:
+          type: "integer"
+        description:
+          type: "string"
+          default: ""
         execute_steps:
           type: array
           description: "A list of commands that the job will run"
           example: ['dbt run', 'dbt test', 'dbt source snapshot-freshness']
           items:
             type: string
+        execution:
+          type: "object"
+          properties:
+            timeout_seconds: 
+              type: "integer"
         settings:
           type: object
           required:
@@ -1317,6 +1315,131 @@ components:
           type: "boolean"
           example: True
           description: When true, run a `dbt docs generate` step at the end of runs triggered from this job
+        is_deferrable:
+          type: "boolean"
+          default: false
+        job_type:
+          type: "string"
+          enum: ["ci", "scheduled", "other", "merge", "exposure_sync", "adaptive"]
+        lifecycle_webhooks_url:
+          type: "string"
+        lifecycle_webhooks:
+          type: "boolean"
+        raw_dbt_version:
+          type: "string"
+        run_compare_changes:
+          type: "boolean"
+        compare_changes_flags:
+          type: "string"
+          default: "-- select state:modified"
+        run_failure_count:
+          type: "integer"
+          default: 0
+        run_generate_sources:
+          type: "boolean"
+        run_lint:
+          type: "boolean"
+        errors_on_lint_failure:
+          type: "boolean"
+        triggers_on_draft_pr:
+          type: "boolean"
+          default: false
+        triggers:
+          type: "object"
+          properties:
+            github_webhook:
+              type: "boolean"
+            schedule:
+              type: "boolean"
+            git_provider_webhook:
+              type: "boolean"
+            on_merge:
+              type: "boolean"
+            custom_branch_only:
+              type: "boolean"
+        created_at:
+          type: "string"
+          format: "date-time"
+        updated_at:
+          type: "string"
+          format: "date-time"
+        account:
+          type: "object"
+          properties:
+            name:
+              type: "string"
+            state:
+              type: "integer"
+              example: 1
+            docs_job_id:
+              type: "integer"
+            freshness_job_id:
+              type: "integer"
+        project:
+          type: "object"
+          properties:
+            name:
+              type: "string"
+            account_id:
+              type: "integer"
+            description:
+              type: "string"
+            connection_id:
+              type: "integer"
+            repository_id:
+              type: "integer"
+            semantic_layer_config_id:
+              type: "integer"
+            state:
+              type: "integer"
+              example: 1
+            dbt_project_subdirectory:
+              type: "string"
+            docs_job_id:
+              type: "integer"
+            freshness_job_id:
+              type: "integer"
+            type:
+              type: "integer"
+              enum: [0, 1]
+        environment:
+          type: "object"
+          properties:
+            account_id: 
+              type: "integer"
+            project_id:
+              type: "integer"
+            name:
+              type: "string"
+            connection_id:
+              type: "integer"
+            credentials_id:
+              type: "integer"
+            repository_id:
+              type: "integer"
+            extended_attributes_id:
+              type: "integer"
+            custom_branch:
+              type: "string"
+            use_custom_branch:
+              type: "boolean"
+            dbt_project_subdirectory:
+              type: "string"
+            dbt_version:
+              type: "string"
+            supports_docs:
+              type: "boolean"
+            deployment_type:
+              type: "string"
+              enum: ["production", "staging"]
+            type:
+              type: "string"
+              enum: ["development", "deployment"]
+            created_by_id:
+              type: "integer"
+            state:
+              type: "integer"
+              example: 1
         schedule:
           type: object
           required:
@@ -1333,9 +1456,36 @@ components:
             time:
               type: string
               enum: ["every_hour", "at_exact_hours"]
-
-
-
+        deactivated:
+          type: "boolean"
+        is_system:
+          type: "boolean"
+        force_node_selection:
+          type: "boolean"
+        most_recent_run:
+          type: "string"
+        most_recent_completed_run:
+          type: "string"
+        job_completion_trigger_condition:
+          type: "object"
+          properties:
+            job_id: 
+              type: "integer"
+            project_id: 
+              type: "integer"
+            statuses: 
+              type: "array"
+              items:
+                type: "integer"
+                enum: [1,2,3,10,20,30]
+                description: |
+                  A numeric representation of the job status
+                  1: Queued
+                  2: Starting
+                  3: Running
+                  10: Success
+                  20: Error
+                  30: Cancelled
     Repository:
       type: object
       properties:
@@ -1455,11 +1605,15 @@ components:
           type: "integer"
           description: Unique identifier for a run
           example: 10000
+        run_id:
+          type: "integer"
         trigger_id:
           type: "integer"
         account_id:
           type: "integer"
           example: 1
+        environment_id:
+          type: "integer"
         project_id:
           type: "integer"
           example: 100
@@ -1521,12 +1675,25 @@ components:
           nullable: true
         executed_by_thread_id:
           type: "string"
+        deferring_run_id:
+          type: "integer"
         artifacts_saved:
           type: "boolean"
         artifact_s3_path:
           type: "string"
         has_docs_generated:
           type: "boolean"
+        has_sources_generated:
+          type: "boolean"
+        notifications_sent:
+          type: "boolean"
+        blocked_by:
+          type: "array"
+          items:
+            type: "integer"
+        should_start_at:
+          type: "string"
+          format: "date-time"
         trigger:
           $ref: '#/components/schemas/Trigger'
         job:
@@ -1553,11 +1720,277 @@ components:
           enum: ["Queued", "Starting", "Running", "Success", "Error", "Cancelled"]
         created_at_humanized:
           type: "string"
+        environment: 
+          type: "object"
+          properties:
+            id:
+              type: "integer"
+            account_id:
+              type: "integer"
+            project_id:
+              type: "integer"
+            name:
+              type: "string"
+            connection_id:
+              type: "integer"
+            credentials_id:
+              type: "integer"
+            repository_id:
+              type: "integer"
+            extended_attributes_id:
+              type: "integer"
+            custom_branch:
+              type: "string"
+            use_custom_branch:
+              type: "boolean"
+            dbt_project_subdirectory:
+              type: "string"
+            dbt_version:
+              type: "string"
+            raw_dbt_version:
+              type: "string"
+            supports_docs:
+              type: "boolean"
+            deployment_type:
+              type: "string"
+            type:
+              type: "string"
+              enum: ["development", "deployment"]
+            created_by_id:
+              type: "integer"
+            state: 
+              type: "integer"
+              example: 1
+            created_at:
+              type: "string"
+              format: "date-time"
+            updated_at:
+              type: "string"
+              format: "date-time"
+            repository:
+              type: "object"
+              properties:
+                id:
+                  type: "integer"
+                account_id:
+                  type: "integer"
+                project_id:
+                  type: "integer"
+                full_name:
+                  type: "string"
+                remote_backend:
+                  type: "string"
+                  enum: ["azure_active_directory", "github", "managed", "gitlab", "manual_config"]
+                git_clone_strategy:
+                  type: "string"
+                  enum: ["azure_active_directory_app", "deploy_key", "deploy_token", "github_app", "git_token"]
+                deploy_key_id:
+                  type: "integer"
+                repository_credentials_id:
+                  type: "integer"
+                github_installation_id:
+                  type: "integer"
+                github_webhook_id:
+                  type: "integer"
+                state:
+                  type: "integer"
+                  example: 1
+                git_provider_id:
+                  type: "integer"
+                private_link_endpoint_id:
+                  type: "string"
+                created_at:
+                  type: "string"
+                  format: "date-time"
+                updated_at:
+                  type: "string"
+                  formate: "date-time"
+                deploy_key:
+                  type: "object"
+                  properties:
+                    account_id: 
+                      type: "integer"
+                    public_key: 
+                      type: "string"
+                    state: 
+                      type: "integer"
+                      default: 1
+                      example: 1
+                    id:
+                      type: "integer"
+                remote_url:
+                  type: "string"
+                pull_request_url_template:
+                  type: "string"
+            connection:
+              type: "object"
+              properties:
+                id:
+                  type: "integer"
+                account_id:
+                  type: "integer"
+                dbt_project_id:
+                  type: "integer"
+                name:
+                  type: "string"
+                type:
+                  type: "string"
+                  enum: ["postgres", "redshift", "snowflake", "bigquery", "adapter"]
+                state:
+                  type: "integer"
+                  example: 1
+                created_by_id:
+                  type: "integer"
+                created_by_service_token_id:
+                  type: "integer"
+                hostname:
+                  type: "string"
+                dbname:
+                  type: "string"
+                port:
+                  type: "integer"
+                tunnel_enabled:
+                  type: "boolean"
+            jobs:
+              type: "array"
+              items:
+                type: "object"
+                properties:
+                  account_id:
+                    type: "integer"
+                  project_id:
+                    type: "integer"
+                  environment_id:
+                    type: "integer"
+                  name:
+                    type: "string"
+                  dbt_version:
+                    type: "string"
+                  deferring_environment_id:
+                    type: "integer"
+                  deferring_job_definition_id:
+                    type: "integer"
+                  description:
+                    type: "string"
+                  execute_steps:
+                    type: "array"
+                    items:
+                      type: "string"
+                  execution:
+                    type: "object"
+                    properties:
+                      timeout_seconds: 
+                        type: "integer"
+                  generate_docs:
+                    type: "boolean"
+                  job_type:
+                    type: "string"
+                    enum: ["ci", "scheduled", "other", "merge", "exposure_sync", "adaptive"]
+                  lifecycle_webhooks:
+                    type: "boolean"
+                  run_compare_changes:
+                    type: "boolean"
+                  compare_changes_flags:
+                    type: "string"
+                    default: "--select state:modified"
+                  run_generate_sources:
+                    type: "boolean"
+                  run_lint:
+                    type: "boolean"
+                  errors_on_lint_failure:
+                    type: "boolean"
+                  settings:
+                    type: "object"
+                    properties:
+                      threads: 
+                        type: "integer"
+                      target_name:
+                        type: "string"
+                  state:
+                    type: "integer"
+                    example: 1
+                  triggers_on_draft_pr:
+                    type: "boolean"
+                    default: false
+                  triggers:
+                    type: "object"
+                    properties:
+                      github_webhook:
+                        type: "boolean"
+                      schedule:
+                        type: "boolean"
+                      git_provider_webhook:
+                        type: "boolean"
+                      on_merge:
+                        type: "boolean"
+                      custom_branch_only:
+                        type: "boolean"
+                  schedule:
+                    type: "object"
+                    properties:
+                      date:
+                        type: "object"
+                        properties:
+                          type:
+                            type: "string"
+                            enum: ["every_day", "days_of_week", "custm_cron", "interval_cron"]
+                          days:
+                            type: "array"
+                            items:
+                              type: "integer"
+                          cron:
+                            type: "string"
+                      time:
+                        type: "object"
+                        properties:
+                          type:
+                            type: "string"
+                            enum: ["every_hour", "at_exact_hours"]
+                          hours:
+                            type: "array"
+                            items:
+                              type: "integer"
+                          interval:
+                            type: "integer"
+                            default: 1
+                      cron:
+                        type: "string"
+                  generate_sources:
+                    type: "boolean"
+                    default: false 
+            custom_environment_variables:
+              type: "array"
+              items:
+                type: "object"
+                properties:
+                  account_id:
+                    type: "integer"
+                  project_id:
+                    type: "integer"
+                  name:
+                    type: "string"
+                  type:
+                    type: "string"
+                    enum: ["project", "environment", "job", "user"]
+                  user_id:
+                    type: "integer"
+                  environment_id:
+                    type: "integer"
+                  job_definition_id:
+                    type: "integer"
+                  display_value:
+                    type: "string"
+                  state:
+                    type: "integer"
+                    default: 1
+                    example: 1
         run_steps:
           type: "array"
           items:
             type: "object"
             properties:
+              id:
+                type: "integer"
               run_id:
                 type: "integer"
               account_id:
@@ -1576,6 +2009,110 @@ components:
                 type: "string"
               debug_log_path:
                 type: "string"
+              truncated_debug_logs:
+                type: "string"
+              started_at:
+                type: "string"
+                format: "date-time"
+              finished_at:
+                type: "string"
+                format: "date-time"
+              status_color:
+                type: "string"
+              status_humanized:
+                type: "string"
+              duration:
+                type: "string"
+              duration_humanized:
+                type: "string"
+              created_at:
+                type: "string"
+                format: "date-time"
+              updated_at:
+                type: "string"
+                format: "date-time"
+              run_step_command:
+                type: object
+                properties:
+                  run_step_id:
+                    type: "integer"
+                  dbt_command:
+                    type: "string"
+              run_step_invocation:
+                type: "object"
+                properties:
+                  run_step_id:
+                    type: "integer"
+                  run_id:
+                    type: "integer"
+              structured_logs_path:
+                type: "string"
+              structured_logs:
+                type: "string"
+              structured_debug_logs_path:
+                type: "string"
+              structured_debug_logs:
+                type: "string"
+              truncated_structured_debug_logs:
+                type: "string" 
+        deprecation:
+          type: "object"
+          properties:
+            count:
+              type: "integer"
+        in_progress:
+          type: "boolean"
+        is_complete:
+          type: "boolean"
+        is_success:
+          type: "boolean"
+        is_error:
+          type: "boolean"
+        is_cancelled:
+          type: "boolean"
+        retrying_run_id:
+          type: "integer"
+        can_retry:
+          type: "boolean"
+        retry_not_supported_reason:
+          type: "string"
+          enum: ["RETRY_UNSUPPORTED_CMD", "RETRY_UNSUPPORTED_VERSION", "RETRY_NOT_LATEST_RUN", "RETRY_NOT_FAILED_RUN", "RETRY_NO_RUN_RESULTS"]
+        job_id:
+          type: "integer"
+        is_running:
+          type: "boolean"
+        href:
+          type: "string"
+        used_repo_cache:
+          type: "boolean"
+        audit:
+          type: "object"
+          properties:
+            trigger:
+              type: "object"
+              properties:
+                actor:
+                  type: "object"
+                  properties:
+                    id:
+                      type: "string"
+                    type:
+                      type: "string"
+                    name:
+                      type: "string"
+            cancellation:
+              type: "object"
+              properties:
+                actor:
+                  type: "object"
+                  properties:
+                    id:
+                      type: "string"
+                    type:
+                      type: "string"
+                    name:
+                      type: "string"
+
     Trigger:
       type: "object"
       properties:
@@ -1589,7 +2126,13 @@ components:
           type: "string"
         git_sha:
           type: "string"
+        azure_pull_request_id:
+          type: "integer"
         github_pull_request_id:
+          type: "integer"
+        gitlab_merge_request_id:
+          type: "integer"
+        non_native_pull_request_id:
           type: "integer"
         schema_override:
           type: "string"
@@ -1619,9 +2162,16 @@ components:
           example: ['dbt run', 'dbt test', 'dbt source snapshot-freshness']
           items:
             type: "string"
+        cause_category:
+          type: "string"
+          enum: ["api", "ci", "scheduled", "ui", "rerun", "job completion", "merge", "exposures generated", "adaptive", "ingest"]
         created_at:
           type: "string"
           format: "date-time"
+        cause_humanized:
+          type: "string"
+        job:
+          type: "string"
 
     UserLicense:
       type: object

@@ -182,7 +182,7 @@ class RunsStream(AccountBasedIncrementalStream):
     """A stream for the runs endpoint."""
 
     name = "runs"
-    path = "/accounts/{account_id}/runs/?include_related=job"
+    path = "/accounts/{account_id}/runs"
     openapi_ref = "Run"
     replication_key = "finished_at"
 

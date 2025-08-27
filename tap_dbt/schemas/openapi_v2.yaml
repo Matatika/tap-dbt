@@ -1764,9 +1764,9 @@ components:
                   type: "integer"
                 full_name:
                   type: "string"
-                # remote_backend:
-                #   type: "string"
-                #   enum: ["azure_active_directory", "github", "managed", "gitlab", "manual_config"]
+                remote_backend:
+                  type: "string"
+                  enum: ["azure_active_directory", "github", "managed", "gitlab", "manual_config"]
                 git_clone_strategy:
                   type: "string"
                   enum: ["azure_active_directory_app", "deploy_key", "deploy_token", "github_app", "git_token"]

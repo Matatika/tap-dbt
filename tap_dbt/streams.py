@@ -277,7 +277,8 @@ class RunDetailStream(AccountBasedStream):
 
     parent_stream_type = RunsStream
 
-    def get_url_params(self, context, next_page_token):
+    @override
+    def get_url_params(self, context: Context, next_page_token: int) -> dict:
         return {
             "include_related": ",".join(  # noqa: FLY002
                 [
@@ -295,5 +296,6 @@ class RunDetailStream(AccountBasedStream):
             )
         }
 
-    def get_new_paginator(self):
+    @override
+    def get_new_paginator(self) -> SinglePagePaginator:
         return SinglePagePaginator()

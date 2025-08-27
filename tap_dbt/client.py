@@ -78,7 +78,10 @@ class DBTStream(RESTStream):
             new_schema = schema.copy()
 
             if "type" in schema and schema.get("nullable", True):
-                new_schema["type"] = append_type(schema, "null")["type"]
+                if "enum" in schema:
+                    new_schema = {"oneOf": [schema, {"type": "null"}]}
+                else:
+                    new_schema["type"] = append_type(schema, "null")["type"]
 
             if "properties" in schema:
                 new_schema["properties"] = {}

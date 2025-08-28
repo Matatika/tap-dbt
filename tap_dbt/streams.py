@@ -287,6 +287,11 @@ class RunArtifacts(AccountBasedStream):
     def get_new_paginator(self) -> SinglePagePaginator:
         return SinglePagePaginator()
 
+    @override
+    def post_process(self, row, context):
+        row["account_id"] = context["account_id"]
+        row["run_id"] = context["run_id"]
+        return row
 
 class RunDetailStream(AccountBasedStream):
     """A stream for the runs endpoint including additional information."""

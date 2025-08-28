@@ -296,6 +296,7 @@ class RunDetailStream(AccountBasedStream):
     openapi_ref = "Run"
 
     parent_stream_type = RunsStream
+    state_partitioning_keys = ()
 
     @override
     def get_url_params(self, context: Context, next_page_token: int) -> dict:

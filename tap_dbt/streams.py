@@ -189,6 +189,15 @@ class RunsStream(AccountBasedIncrementalStream):
     is_sorted = True
 
     @override
+    @property
+    def STATE_MSG_FREQUENCY(self) -> int:
+        return (
+            self.config["page_size"]  # after every page
+            if self.has_selected_descendents
+            else super().STATE_MSG_FREQUENCY
+        )
+
+    @override
     def get_child_context(self, record: dict, context: dict) -> dict[str, str]:
         return {
             **context,

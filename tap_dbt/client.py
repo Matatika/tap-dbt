@@ -86,6 +86,16 @@ class DBTStream(RESTStream):
             if "properties" in schema:
                 new_schema["properties"] = {}
                 for p_name, p_schema in schema["properties"].items():
+
+                    # don't include properties without a defined type
+                    if "type" not in p_schema:
+                        self.logger.warning(
+                            "Skipping property '%s' with no defined type: %s",
+                            p_name,
+                            p_schema,
+                        )
+                        continue
+
                     if p_name not in self.primary_keys:
                         new_schema["properties"][p_name] = append_null_nested(p_schema)
                     else:
